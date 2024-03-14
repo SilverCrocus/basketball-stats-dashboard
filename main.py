@@ -11,8 +11,8 @@ urls = {
 }
 
 # Create connections to the SQLite databases (they will be created if they don't exist)
-conn_mj = sqlite3.connect("michael_jordan_stats.db")
-conn_lj = sqlite3.connect("lebron_james_stats.db")
+conn_mj = sqlite3.connect("databases/michael_jordan_stats.db")
+conn_lj = sqlite3.connect("databases/lebron_james_stats.db")
 
 all_table_ids = set()
 
@@ -58,28 +58,28 @@ for player, url in urls.items():
                 table_html_io = StringIO(table_html)
                 df = pd.read_html(table_html_io)[0]
 
-                # Save the data to the respective SQLite database
-                table_name = f"table_{i}_{table_id}"
+                # Save the data to the respective SQLite database without the table prefix
+                table_name = table_id
                 if player == "Michael Jordan":
                     df.to_sql(table_name, conn_mj, if_exists="replace", index=False)
                 else:
                     df.to_sql(table_name, conn_lj, if_exists="replace", index=False)
 
-                print(f"Table {i} data saved to the database.")
+                print(f"Table {table_name} data saved to the database.")
                 print()
 
     driver.quit()
 
 # Ensure both databases have all the tables
 for table_id in all_table_ids:
-    table_name = f"table_{table_id}"
-    
+    table_name = table_id
+
     # Check if the table exists in Michael Jordan's database
     mj_table_exists = not pd.read_sql_query(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'", conn_mj).empty
-    
+
     # Check if the table exists in LeBron James' database
     lj_table_exists = not pd.read_sql_query(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'", conn_lj).empty
-    
+
     if mj_table_exists and not lj_table_exists:
         # Table exists in Michael Jordan's database but not in LeBron James' database
         df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn_mj)
