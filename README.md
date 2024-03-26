@@ -54,7 +54,7 @@ pip install seleniumbase pandas streamlit plotly
 2. Run the following command to start the Streamlit dashboard:
 
    ```bash
-   streamlit run dashboard.py
+   streamlit run src/app.py
    ```
 
 3. The dashboard will open in your default web browser.
