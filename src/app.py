@@ -5,6 +5,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
+# Set page title and favicon
+st.set_page_config(page_title="NBA Player Stats Dashboard", page_icon=":basketball:")
+
 # Get the current directory of the script
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,16 +34,42 @@ def get_table_data(table_name):
     
     return mj_data, lj_data
 
-# Function to convert the x-axis variable to a datetime format
-def convert_to_datetime(value):
-    if isinstance(value, str) and '-' in value:
-        year = value.split('-')[0]
-        return pd.to_datetime(year, format='%Y')
-    else:
-        return pd.to_datetime(value)
+# Function to handle the "Season" variable
+def handle_season_variable(data):
+    data['Season_Start'] = pd.to_datetime(data['Season'].str[:4])
+    data = data.sort_values('Season_Start')
+    data['Season_Numeric'] = range(len(data))
+    return data
 
 # Streamlit app
 def main():
+    # Set custom CSS styles
+    st.markdown(
+        """
+        <style>
+        .stButton > button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 4px;
+            border: none;
+        }
+        .stTextInput > div > div > input {
+            border-radius: 4px;
+            padding: 8px;
+        }
+        .stSelectbox > div > div > div > div > select {
+            border-radius: 4px;
+            padding: 8px;
+        }
+        .stMultiSelect > div > div > div > div > ul {
+            border-radius: 4px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.title("NBA Player Stats Dashboard")
     
     # Get the list of table names from the database
@@ -65,28 +94,35 @@ def main():
         # Select the type of graph
         graph_type = st.selectbox("Select graph type", ["Line", "Bar", "Scatter"])
         
-        # Select variables for the graph
-        variables = st.multiselect("Select variables", mj_data.columns)
+        # Select variables for the y-axis
+        y_axis_variables = st.multiselect("Select y-axis variables", mj_data.columns)
         
-        if variables:
+        if y_axis_variables:
             # Create separate graphs for each player
             for player, data in [("Michael Jordan", mj_data), ("LeBron James", lj_data)]:
                 st.subheader(player)
                 
-                # Convert x-axis variable to datetime
-                data[x_axis] = data[x_axis].apply(convert_to_datetime)
+                # Handle the "Season" variable
+                data = handle_season_variable(data)
+                
+                if x_axis == 'Season':
+                    x_axis_data = 'Season_Numeric'
+                else:
+                    x_axis_data = x_axis
                 
                 if graph_type == "Line":
-                    fig = px.line(data, x=x_axis, y=variables)
+                    fig = px.line(data, x=x_axis_data, y=y_axis_variables)
                     st.plotly_chart(fig)
                 elif graph_type == "Bar":
-                    fig = px.bar(data, x=x_axis, y=variables)
+                    fig = go.Figure()
+                    for variable in y_axis_variables:
+                        fig.add_trace(go.Bar(x=data[x_axis_data], y=data[variable], name=variable))
                     st.plotly_chart(fig)
                 else:
-                    fig = px.scatter(data, x=variables[0], y=variables[1])
+                    fig = px.scatter(data, x=x_axis_data, y=y_axis_variables[0])
                     st.plotly_chart(fig)
         else:
-            st.write("Please select variables to plot.")
+            st.write("Please select variables for the y-axis.")
     else:
         st.write("Please select a table from the dropdown.")
 
