@@ -17,9 +17,9 @@ Before running the script and the dashboard, ensure you have the following depen
 
 You can install the required packages using pip:
 
-'''bash
+```bash
 pip install seleniumbase pandas streamlit plotly
-'''
+```
 
 ## 🚀 Usage
 
