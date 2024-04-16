@@ -47,22 +47,19 @@ def handle_season_variable(data):
     data['Season_Numeric'] = range(1, len(data) + 1)
     return data
 
-# Function to generate summary statistics for a player
-def generate_summary_statistics(player, data, selected_variables):
-    st.subheader(f"{player} - Summary")
-
-    if len(selected_variables) > 0:
-        # Calculate and display averages for selected variables
-        averages = data[selected_variables].mean()
-        st.subheader("Averages")
-        st.table(averages)
-
-        # Calculate and display totals for selected variables
-        totals = data[selected_variables].sum()
-        st.subheader("Totals")
-        st.table(totals)
-    else:
-        st.write("No variables selected for summary statistics.")
+# Function to create a custom theme for the graphs
+def create_custom_theme():
+    custom_theme = go.layout.Template()
+    custom_theme.layout.plot_bgcolor = '#F0F2F6'
+    custom_theme.layout.paper_bgcolor = '#F0F2F6'
+    custom_theme.layout.font.color = '#FFFFFF'
+    custom_theme.layout.xaxis.gridcolor = '#D1D5DB'
+    custom_theme.layout.yaxis.gridcolor = '#D1D5DB'
+    custom_theme.layout.xaxis.zerolinecolor = '#D1D5DB'
+    custom_theme.layout.yaxis.zerolinecolor = '#D1D5DB'
+    custom_theme.layout.xaxis.linecolor = '#D1D5DB'
+    custom_theme.layout.yaxis.linecolor = '#D1D5DB'
+    return custom_theme
 
 # Streamlit app
 def main():
@@ -70,23 +67,44 @@ def main():
     st.markdown(
         """
         <style>
+        body {
+            background-color: #F0F2F6;
+        }
         .stButton > button {
             background-color: #1D428A;
             color: white;
             padding: 10px 24px;
             border-radius: 4px;
             border: none;
+            transition: background-color 0.3s ease;
+        }
+        .stButton > button:hover {
+            background-color: #162f5f;
         }
         .stTextInput > div > div > input {
             border-radius: 4px;
             padding: 8px;
+            border: 1px solid #D1D5DB;
         }
         .stSelectbox > div > div > div > div > select {
             border-radius: 4px;
             padding: 8px;
+            border: 1px solid #D1D5DB;
         }
         .stMultiSelect > div > div > div > div > ul {
             border-radius: 4px;
+            border: 1px solid #D1D5DB;
+        }
+        .stMarkdown h1 {
+            color: #FFFFFF;  # Change header color to white
+        }
+        .stMarkdown h2 {
+            color: #FFFFFF;  # Change subheader color to white
+        }
+        .stImage {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
         }
         </style>
         """,
@@ -96,7 +114,7 @@ def main():
     # Add a styled header
     st.markdown(
         """
-        <div style="background-color: #1D428A; padding: 20px; color: white; text-align: center;">
+        <div style="background-color: #1D428A; padding: 20px; color: white; text-align: center; border-radius: 4px; margin-bottom: 20px;">
             <h1 style="margin: 0;">NBA Player Stats Dashboard</h1>
         </div>
         """,
@@ -125,7 +143,7 @@ def main():
         mj_data, lj_data = get_table_data(selected_table.replace(' ', '_'))
         
         # Display the graphs for both players
-        st.subheader(f"{selected_table} Table")
+        st.markdown(f"<h2>{selected_table} Table</h2>", unsafe_allow_html=True)
         
         # Select the x-axis variable
         x_axis = st.selectbox("Select x-axis variable", mj_data.columns)
@@ -134,9 +152,10 @@ def main():
         y_axis_variables = st.multiselect("Select y-axis variables", mj_data.columns)
         
         if y_axis_variables:
-            # Create separate graphs for each player
+            custom_theme = create_custom_theme()
+            
             for player, data in [("Michael Jordan", mj_data), ("LeBron James", lj_data)]:
-                st.subheader(player)
+                st.markdown(f"<h2>{player}</h2>", unsafe_allow_html=True)
                 
                 # Display player image or logo
                 if player == "Michael Jordan":
@@ -153,23 +172,21 @@ def main():
                     x_axis_data = x_axis
                 
                 if graph_type == "Line":
-                    fig = px.line(data, x=x_axis_data, y=y_axis_variables)
+                    fig = px.line(data, x=x_axis_data, y=y_axis_variables, template=custom_theme)
                     fig.update_layout(
                         title=f"{player} - {selected_table}",
                         xaxis_title=x_axis,
                         yaxis_title=", ".join(y_axis_variables),
                         legend_title="Variables",
                         hovermode="x",
-                        plot_bgcolor="#1D428A",
-                        paper_bgcolor="#1D428A",
-                        font=dict(color="white"),
-                        legend=dict(font=dict(color="white")),
-                        xaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
-                        yaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
+                        legend=dict(
+                            font=dict(color='white'),
+                            bgcolor='rgba(50, 50, 50, 0.5)'
+                        )
                     )
                     st.plotly_chart(fig)
                 elif graph_type == "Bar":
-                    fig = go.Figure()
+                    fig = go.Figure(template=custom_theme)
                     for variable in y_axis_variables:
                         fig.add_trace(go.Bar(x=data[x_axis_data], y=data[variable], name=variable))
                     fig.update_layout(
@@ -178,51 +195,26 @@ def main():
                         yaxis_title="Value",
                         legend_title="Variables",
                         hovermode="x",
-                        plot_bgcolor="#1D428A",
-                        paper_bgcolor="#1D428A",
-                        font=dict(color="white"),
-                        legend=dict(font=dict(color="white")),
-                        xaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
-                        yaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
+                        legend=dict(
+                            font=dict(color='white'),
+                            bgcolor='rgba(50, 50, 50, 0.5)'
+                        )
                     )
                     st.plotly_chart(fig)
                 else:
-                    fig = px.scatter(data, x=x_axis_data, y=y_axis_variables[0])
+                    fig = px.scatter(data, x=x_axis_data, y=y_axis_variables[0], template=custom_theme)
                     fig.update_layout(
                         title=f"{player} - {selected_table}",
                         xaxis_title=x_axis,
                         yaxis_title=y_axis_variables[0],
                         hovermode="x",
-                        plot_bgcolor="#1D428A",
-                        paper_bgcolor="#1D428A",
-                        font=dict(color="white"),
-                        xaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
-                        yaxis=dict(gridcolor="rgba(255, 255, 255, 0.2)"),
+                        legend=dict(
+                            font=dict(color='white'),
+                            bgcolor='rgba(50, 50, 50, 0.5)'
+                        )
                     )
                     st.plotly_chart(fig)
-                
-                # Generate summary statistics for the player
-                generate_summary_statistics(player, data, y_axis_variables)
 
-                # Display individual achievements and notable records/milestones
-                if player == "Michael Jordan":
-                    st.subheader("Michael Jordan")
-                    st.markdown("#### Individual Achievements")
-                    st.markdown("1. **Six NBA Finals MVP Awards**: Jordan's unmatched ability to perform in high-stakes games earned him Finals MVP in every championship series he competed in.")
-                    st.markdown("2. **Five MVP Awards**: Jordan's excellence was recognized with five MVP titles throughout his career, showcasing his dominance in the league during his playing years.")
-                    st.markdown("3. **Defensive Player of the Year (1988)**: This award highlighted Jordan's exceptional defensive skills, making him a complete player who excelled on both ends of the court.")
-                    st.markdown("#### Notable Records/Milestones")
-                    st.markdown("1. **10 Scoring Titles**: Jordan led the NBA in scoring for ten seasons, a testament to his scoring ability and offensive prowess.")
-                    st.markdown("2. **Two Olympic Gold Medals**: His achievements on the international stage include gold medals in 1984 and 1992, the latter with the 'Dream Team,' which is often considered the greatest team assembled in any sport.")
-                else:
-                    st.subheader("LeBron James")
-                    st.markdown("#### Individual Achievements")
-                    st.markdown("1. **Four NBA Finals MVP Awards**: LeBron's impact in the finals continues to be profound, with four Finals MVP awards that underscore his crucial role in his teams' successes.")
-                    st.markdown("2. **Four MVP Awards**: Recognized as the most valuable player four times, LeBron has been a dominant force throughout his career.")
-                    st.markdown("#### Notable Records/Milestones")
-                    st.markdown("1. **NBA's All-Time Leading Scorer**: LeBron broke Kareem Abdul-Jabbar's record to become the all-time leading scorer in NBA history, a monumental achievement highlighting his longevity and scoring ability.")
-                    st.markdown("2. **All-NBA Selections**: LeBron holds the record for the most All-NBA Team selections, demonstrating his consistency and excellence over a long career.")
-                    st.markdown("3. **Two Olympic Gold Medals**: His success isn't just limited to the NBA; LeBron has also been a key player for the USA in the Olympics, securing gold medals in 2008 and 2012.")
         else:
             st.write("Please select variables for the y-axis.")
     else:
